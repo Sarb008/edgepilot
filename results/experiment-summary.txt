@@ -1,0 +1,23 @@
+EDGEPILOT EXPERIMENTAL SUMMARY
+==================================================
+
+Dynamic Load Experiment
+--------------------------------------------------
+Maximum observed worker CPU: 51.0% (edge-node-1, observation 10)
+Maximum trend component: 25.50 (edge-node-1, observation 10)
+
+Algorithm Comparison Experiment
+--------------------------------------------------
+Recommendation divergences: 0
+Largest reduction in node-1 preference margin:
+  Observation: 11
+  Baseline margin: 2.50
+  Trend-aware margin: 0.90
+  Margin reduction: 1.60
+
+Interpretation
+--------------------------------------------------
+The baseline heuristic reacted to current resource pressure and avoided the strongly loaded worker.
+The trend-aware heuristic detected positive short-term pressure growth.
+No recommendation divergence was observed in the controlled comparison experiment.
+Trend awareness changed relative candidate preference, but was not strong enough to reverse the final recommendation under this workload.
