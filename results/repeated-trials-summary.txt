@@ -1,0 +1,26 @@
+EDGEPILOT PRELIMINARY REPEATED-TRIAL SUMMARY
+=======================================================
+
+Trials completed: 5
+Total recommendation divergences: 0
+
+Peak CPU across trials
+  Mean: 21.80%
+  Median: 22.00%
+  Sample standard deviation: 0.45
+
+Peak trend component across trials
+  Mean: 10.40
+  Median: 10.50
+  Sample standard deviation: 0.22
+
+Maximum within-trial preference-margin reduction
+  Mean: 1.82
+  Median: 2.10
+  Sample standard deviation: 0.48
+
+Interpretation
+-------------------------------------------------------
+These five runs are a preliminary repeatability check for Review 3.
+They are not treated as a statistically powered final evaluation.
+The final research phase should use more trials, workloads, baselines, and application-level outcome metrics.

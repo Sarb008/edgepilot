@@ -1,0 +1,25 @@
+timestamp,observation,phase,node,cpu_percent,memory_percent,baseline_score,trend_component,trend_score,baseline_recommended,trend_recommended,divergence
+2026-11-02T02:17:47.443179+00:00,1,IDLE,edge-node-1,1.0,1.0,1.00,,,edge-node-1,,no
+2026-11-02T02:17:47.443179+00:00,1,IDLE,edge-node-2,1.0,3.0,2.00,,,edge-node-1,,no
+2026-11-02T02:17:52.728712+00:00,2,IDLE,edge-node-1,1.0,1.0,1.00,,,edge-node-1,,no
+2026-11-02T02:17:52.728712+00:00,2,IDLE,edge-node-2,1.0,3.0,2.00,,,edge-node-1,,no
+2026-11-02T02:17:58.443910+00:00,3,IDLE,edge-node-1,1.0,1.0,1.00,,,edge-node-1,,no
+2026-11-02T02:17:58.443910+00:00,3,IDLE,edge-node-2,1.0,3.0,2.00,,,edge-node-1,,no
+2026-11-02T02:18:03.708880+00:00,4,IDLE,edge-node-1,1.0,1.0,1.00,,,edge-node-1,,no
+2026-11-02T02:18:03.708880+00:00,4,IDLE,edge-node-2,1.0,3.0,2.00,,,edge-node-1,,no
+2026-11-02T02:18:08.931079+00:00,5,IDLE,edge-node-1,1.0,1.0,1.00,,,edge-node-1,,no
+2026-11-02T02:18:08.931079+00:00,5,IDLE,edge-node-2,1.0,3.0,2.00,,,edge-node-1,,no
+2026-11-02T02:18:34.775665+00:00,6,STABLE LOAD,edge-node-1,1.0,1.0,1.00,0.00,0.80,edge-node-1,edge-node-1,no
+2026-11-02T02:18:34.775665+00:00,6,STABLE LOAD,edge-node-2,6.0,3.0,4.50,2.50,4.10,edge-node-1,edge-node-1,no
+2026-11-02T02:18:40.607540+00:00,7,RISING LOAD,edge-node-1,1.0,1.0,1.00,0.00,0.80,edge-node-1,edge-node-1,no
+2026-11-02T02:18:40.607540+00:00,7,RISING LOAD,edge-node-2,21.0,3.0,12.00,10.00,11.60,edge-node-1,edge-node-1,no
+2026-11-02T02:18:46.614099+00:00,8,RISING LOAD,edge-node-1,1.0,1.0,1.00,0.00,0.80,edge-node-1,edge-node-1,no
+2026-11-02T02:18:46.614099+00:00,8,RISING LOAD,edge-node-2,21.0,3.0,12.00,10.00,11.60,edge-node-1,edge-node-1,no
+2026-11-02T02:18:51.939300+00:00,9,RISING LOAD,edge-node-1,10.0,1.0,5.50,4.50,5.30,edge-node-1,edge-node-1,no
+2026-11-02T02:18:51.939300+00:00,9,RISING LOAD,edge-node-2,22.0,3.0,12.50,10.50,12.10,edge-node-1,edge-node-1,no
+2026-11-02T02:18:57.266666+00:00,10,RISING LOAD,edge-node-1,10.0,1.0,5.50,4.50,5.30,edge-node-1,edge-node-1,no
+2026-11-02T02:18:57.266666+00:00,10,RISING LOAD,edge-node-2,22.0,3.0,12.50,10.50,12.10,edge-node-1,edge-node-1,no
+2026-11-02T02:19:02.636568+00:00,11,RISING LOAD,edge-node-1,10.0,1.0,5.50,4.50,5.30,edge-node-1,edge-node-1,no
+2026-11-02T02:19:02.636568+00:00,11,RISING LOAD,edge-node-2,22.0,3.0,12.50,8.00,11.60,edge-node-1,edge-node-1,no
+2026-11-02T02:19:08.448552+00:00,12,RISING LOAD,edge-node-1,16.0,1.0,8.50,7.50,8.30,edge-node-1,edge-node-1,no
+2026-11-02T02:19:08.448552+00:00,12,RISING LOAD,edge-node-2,21.0,3.0,12.00,0.00,9.60,edge-node-1,edge-node-1,no

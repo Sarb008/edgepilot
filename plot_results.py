@@ -9,6 +9,7 @@ the EdgePilot experiments.
 Input:
     results/experiment-dynamic-load.csv
     results/experiment-algorithm-comparison.csv
+    results/repeated-trials-summary.csv
 
 Output:
     results/figures/dynamic-cpu-pressure.png
@@ -16,6 +17,7 @@ Output:
     results/figures/trend-component.png
     results/figures/algorithm-comparison.png
     results/experiment-summary.txt
+    results/figures/repeated-trials.png
 """
 
 import csv
@@ -36,8 +38,12 @@ COMPARISON_FILE = (
     / "experiment-algorithm-comparison.csv"
 )
 
-SUMMARY_FILE = RESULTS / "experiment-summary.txt"
+REPEATED_FILE = (
+    RESULTS
+    / "repeated-trials-summary.csv"
+)
 
+SUMMARY_FILE = RESULTS / "experiment-summary.txt"
 
 FIGURES.mkdir(
     parents=True,
@@ -82,6 +88,10 @@ dynamic = read_csv(DYNAMIC_FILE)
 
 comparison = read_csv(
     COMPARISON_FILE
+)
+
+repeated = read_csv(
+    REPEATED_FILE
 )
 
 
@@ -525,6 +535,78 @@ plt.tight_layout()
 plt.savefig(
     FIGURES
     / "algorithm-comparison.png",
+    dpi=200
+)
+
+plt.close()
+
+# ---------------------------------------------------------
+# Figure 5:
+# Repeated-trial preference-margin reduction
+# ---------------------------------------------------------
+
+trials = [
+    int(row["trial"])
+    for row in repeated
+]
+
+margin_reductions = [
+    as_float(row["margin_reduction"])
+    for row in repeated
+]
+
+mean_reduction = (
+    sum(margin_reductions)
+    / len(margin_reductions)
+)
+
+
+plt.figure(
+    figsize=(9, 6)
+)
+
+plt.bar(
+    trials,
+    margin_reductions,
+    label="Maximum margin reduction"
+)
+
+plt.axhline(
+    mean_reduction,
+    linestyle="--",
+    linewidth=1.5,
+    label=f"Mean = {mean_reduction:.2f}"
+)
+
+plt.xlabel("Trial")
+
+plt.ylabel(
+    "Maximum Preference-Margin Reduction"
+)
+
+plt.title(
+    "EdgePilot Preliminary Repeatability — Trend-Aware Margin Effect"
+)
+
+plt.xticks(trials)
+
+plt.ylim(
+    0,
+    max(margin_reductions) * 1.25
+)
+
+plt.grid(
+    axis="y",
+    alpha=0.25
+)
+
+plt.legend()
+
+plt.tight_layout()
+
+plt.savefig(
+    FIGURES
+    / "repeated-trials.png",
     dpi=200
 )
 

@@ -1,0 +1,6 @@
+trial,peak_cpu,peak_trend,divergences,best_observation,baseline_margin,trend_margin,margin_reduction
+1,21.0,10.0,0,12,3.5,1.3,2.2
+2,22.0,10.5,0,11,3.5,2.3,1.2
+3,22.0,10.5,0,12,3.5,1.4,2.1
+4,22.0,10.5,0,11,3.5,2.1,1.4
+5,22.0,10.5,0,12,3.5,1.3,2.2
