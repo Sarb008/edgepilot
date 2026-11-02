@@ -25,44 +25,18 @@ The objective is not to claim an optimal scheduler, but to experimentally study 
 
 ## 2. Architecture
 
-The experimental workflow is:
+![EdgePilot System Architecture](docs/edgepilot-system-architecture.jpg)
 
-```text
-                 Kubernetes Edge Cluster
-              ┌────────────────────────────┐
-              │                            │
-              │   Worker 1                 │
-              │   Worker 2                 │
-              │   Worker 3                 │
-              │                            │
-              └─────────────┬──────────────┘
-                            │
-                    kubectl top nodes
-                            │
-                            ▼
-                  ┌───────────────────┐
-                  │     EdgePilot     │
-                  │                   │
-                  │ Metric Collector  │
-                  │        ↓          │
-                  │ Pressure Scoring  │
-                  │        ↓          │
-                  │ Node Selection    │
-                  └─────────┬─────────┘
-                            │
-                   preferred worker
-                            │
-                            ▼
-                     nodeSelector
-                            │
-                            ▼
-                  Kubernetes Scheduler
-                            │
-                            ▼
-                    Workload Placement
-```
+EdgePilot follows a simple monitoring and placement workflow:
 
-EdgePilot makes a placement recommendation and target selection. Kubernetes performs the actual scheduling and binding.
+1. CPU and memory utilization are collected from the Kubernetes worker nodes.
+2. EdgePilot maintains recent observations and calculates the short-term resource trend.
+3. The baseline and trend-aware resource-pressure scores are calculated.
+4. The worker with the lowest score is recommended.
+5. EdgePilot adds the selected worker through a `nodeSelector`.
+6. Kubernetes performs the final scheduling and pod placement.
+
+The current experimental cluster contains one control-plane node and three worker nodes.
 
 ---
 
