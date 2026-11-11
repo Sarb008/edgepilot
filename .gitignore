@@ -38,3 +38,6 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+
+# Generated experiment outputs
+research_outputs/
