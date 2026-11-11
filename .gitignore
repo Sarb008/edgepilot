@@ -29,3 +29,12 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+
+# Python environments and build artifacts
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
