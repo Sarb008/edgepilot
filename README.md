@@ -1,645 +1,275 @@
-# EdgePilot
+# EdgePilot v2 — Deadline-Aware Scheduling Under Stale Telemetry
 
-**A Lightweight Reliability-Aware Scheduling Extension for Kubernetes Edge Clusters**
+**A reproducible experimental framework for studying the trade-off between telemetry freshness, workload placement feasibility, and deadline constraints.**
 
-EdgePilot is an experimental Kubernetes scheduling extension that investigates whether lightweight, interpretable resource-pressure heuristics can provide useful workload-placement recommendations in resource-constrained edge environments.
+[![Research Release](https://img.shields.io/badge/release-v2.0.0--research-blue)](https://github.com/Sarb008/edgepilot/releases/tag/v2.0.0-research)
+![Python](https://img.shields.io/badge/Python-3.11%2B-blue)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-kind-326CE5)
+![Research](https://img.shields.io/badge/status-exploratory%20research-orange)
 
-Rather than replacing the Kubernetes scheduler, EdgePilot operates externally. It collects live worker-node metrics, computes resource-pressure scores, selects a preferred worker, and can inject that selection into a workload using a Kubernetes `nodeSelector`. Kubernetes remains responsible for final scheduling, binding, and workload lifecycle management.
+## Overview
 
-The project also evaluates whether incorporating short-term resource trends provides additional information beyond a current-state CPU/memory heuristic.
+Distributed scheduling decisions frequently depend on resource observations that may already be outdated when a workload arrives.
 
----
+Immediately placing a workload using stale telemetry can select a worker that no longer has sufficient schedulable capacity. Waiting for fresher information may prevent such a decision, but consumes part of the workload's available deadline budget.
 
-## 1. Research Question
+EdgePilot v2 investigates this information–latency trade-off through deterministic simulation and controlled Kubernetes experiments.
 
-> Can a lightweight, interpretable resource-pressure heuristic provide useful scheduling recommendations for Kubernetes edge clusters, and what additional value does short-term trend awareness offer?
+### Research Question
 
-The study compares:
+> Under what conditions does waiting for fresher resource telemetry improve deadline-aware workload placement, despite consuming part of the available deadline?
 
-1. a **baseline current-pressure heuristic**, and
-2. a **trend-aware heuristic** that additionally considers recent increases in CPU and memory pressure.
+The project evaluates when bounded waiting is beneficial, when it provides no additional value, and when it can be harmful.
 
-The objective is not to claim an optimal scheduler, but to experimentally study whether simple and explainable signals can provide useful scheduling guidance.
+## Research Contributions
 
----
+- A deterministic discrete-event scheduling simulator separating actual resource state, telemetry measurement time, and telemetry delivery time.
+- Four scheduling strategies: greedy, age-penalized, bounded deferral, and uncertainty-aware admission.
+- Controlled telemetry delays, missing observations, capacity changes, and reliability disruptions.
+- A fixed 324-case synthetic sensitivity matrix comprising 648 policy runs.
+- Controlled Kubernetes CPU-request feasibility experiments comprising 24 sequential Pod trials across 12 worker-balanced blocks.
+- Matched-input decision audits and worker-selection tie-breaking analysis.
+- Automated evidence auditing, deterministic replay, regression testing, and reproducibility documentation.
 
-## 2. Architecture
+The contribution is an exploratory experimental study and reference implementation, not a claim of a novel scheduling algorithm or production-ready Kubernetes scheduler.
 
-![EdgePilot System Architecture](docs/edgepilot-system-architecture.jpg)
+## System Architecture
 
-EdgePilot follows a simple monitoring and placement workflow:
-
-1. CPU and memory utilization are collected from the Kubernetes worker nodes.
-2. EdgePilot maintains recent observations and calculates the short-term resource trend.
-3. The baseline and trend-aware resource-pressure scores are calculated.
-4. The worker with the lowest score is recommended.
-5. EdgePilot adds the selected worker through a `nodeSelector`.
-6. Kubernetes performs the final scheduling and pod placement.
-
-The current experimental cluster contains one control-plane node and three worker nodes.
-
----
-
-## 3. Experimental Environment
-
-The prototype was evaluated using a k3d Kubernetes cluster running on a Google Cloud virtual machine.
-
-### Host Environment
-
-- Ubuntu 24.04 LTS
-- Google Cloud VM
-- 2 vCPUs
-- 8 GB RAM
-- Docker
-- k3d
-- kubectl
-- Kubernetes Metrics Server
-
-### Kubernetes Topology
-
-The cluster contains:
-
-- 1 control-plane node
-- 3 worker nodes
-
-The workers are labelled as:
-
-```text
-edge-node-1 -> k3d-edgepilot-agent-0
-edge-node-2 -> k3d-edgepilot-agent-1
-edge-node-3 -> k3d-edgepilot-agent-2
+```mermaid
+flowchart TD
+    A[Workload arrivals and deadlines] --> C[Scheduling policy]
+    B[Actual node resource state] --> D[Telemetry measurement]
+    D --> E[Delayed telemetry delivery]
+    E --> C
+    C --> F{Scheduling decision}
+    F -->|Place| G[Selected worker]
+    F -->|Defer| H[Bounded waiting]
+    H --> C
+    F -->|Reject| I[Recorded outcome]
+    G --> J[Simulation or Kubernetes validation]
+    J --> I
+    I --> K[Experimental traces and evidence audit]
 ```
 
-using the Kubernetes label `edgepilot.io/node`.
+The scheduling policy receives only observations that have already been delivered. Actual resource state is maintained separately for execution and evaluation.
 
-### Experimental Limitation
+## Scheduling Strategies
 
-The k3d nodes are logical Kubernetes nodes implemented as containers and share the resources of a single cloud VM.
+| Strategy | Description |
+|---|---|
+| Greedy | Immediately selects a worker using observed available CPU capacity. |
+| Age-penalized | Incorporates telemetry age into immediate worker selection. |
+| Bounded deferral | Allows limited waiting for fresher observations within the workload's remaining deadline budget. |
+| Uncertainty-aware | Accounts for uncertainty in observed resource availability when making admission decisions. |
 
-Therefore, this environment does not reproduce the physical isolation, hardware heterogeneity, or network characteristics of a real distributed edge deployment.
+The final primary evaluation compares immediate age-aware placement against bounded deferral.
 
-It provides a controlled Kubernetes environment for evaluating EdgePilot's scoring, monitoring, and placement workflow.
+Bounded waiting is constrained by the remaining time available for dispatch, startup, and execution.
 
----
-
-## 4. Baseline Resource-Pressure Model
-
-For each worker, EdgePilot observes CPU utilization `C` and memory utilization `M`.
-
-The baseline pressure score is:
-
-```text
-R_base = 0.5C + 0.5M
-```
-
-The worker with the **lowest score** is preferred.
-
-The 0.5/0.5 weights are experimental choices and are not claimed to be globally optimal.
-
----
-
-## 5. Trend-Aware Model
-
-EdgePilot maintains a five-observation history to detect increasing resource pressure.
+A successful defer-and-place outcome requires:
 
 ```text
-Delta_C = max(0, C_current - C_oldest)
-
-Delta_M = max(0, M_current - M_oldest)
-
-T = min(100, 0.5 * Delta_C + 0.5 * Delta_M)
-
-R_trend = 0.4C + 0.4M + 0.2T
+waiting + dispatch overhead + startup + execution
+    <= remaining deadline budget
 ```
 
-The worker with the lowest score is preferred.
+Waiting is useful only if informative telemetry becomes available before that budget is exhausted.
 
-The weights and history-window size are experimental design choices rather than optimized parameters.
----
+## Experimental Results
 
-## 6. Core Implementation
+### 1. Deterministic Simulation
 
-### `edgepilot.py`
+The final synthetic study contains 324 matched cases and 648 policy runs.
 
-The main advisory monitoring and scoring prototype.
+Both policies receive the same prescribed initial observations and external event schedules within each matched case.
 
-It:
+| Capacity-change condition | Cases | Immediate age-aware | Bounded deferral |
+|---|---:|---:|---:|
+| Unchanged | 108 | 108/108 | 108/108 |
+| Changed, remains feasible | 108 | 108/108 | 108/108 |
+| Changed, becomes infeasible | 108 | 54/108 | 84/108 |
+| Total | 324 | 270/324 | 300/324 |
 
-- discovers EdgePilot-labelled Kubernetes workers,
-- collects live CPU and memory utilization using `kubectl top nodes`,
-- calculates baseline resource-pressure scores,
-- maintains recent metric history,
-- calculates trend-aware scores,
-- recommends the lowest-pressure worker,
-- records observations to CSV.
+![Deterministic simulation results](docs/research-v2/figures/synthetic_conditions.png)
 
-This component is advisory and does not independently replace Kubernetes scheduling.
+In the engineered infeasible-capacity scenarios, bounded deferral improved on-time completion by 30 of 108 configured cases.
 
-### `edgepilot_place.py`
+In the unchanged and still-feasible controls, waiting provided no additional on-time completions and introduced extra delay.
 
-This script demonstrates integration with actual Kubernetes workload placement.
+Earlier reliability experiments also identified disruption scenarios in which waiting was harmful.
 
-It:
+These are deterministic configured cases, not independently sampled production workloads.
 
-1. discovers labelled workers,
-2. obtains live resource metrics,
-3. calculates baseline scores,
-4. selects the lowest-pressure worker,
-5. maps the logical EdgePilot worker to its Kubernetes node,
-6. generates a demonstration workload,
-7. injects a `nodeSelector`,
-8. submits the workload to Kubernetes,
-9. waits for the pod to become ready,
-10. verifies the actual Kubernetes node on which the pod runs.
+### 2. Controlled Kubernetes Validation
 
-Kubernetes retains final responsibility for scheduling, binding, and workload lifecycle management.
+The Kubernetes evaluation uses a local kind cluster with one control-plane node and two Docker-backed workers sharing one physical host.
 
----
+The experiment introduces a controlled CPU-request reservation on a prescribed worker and evaluates whether each policy selects a feasible placement using its available observations.
 
-## 7. Experiments
+| Worker perturbation | Blocks | Immediate age-aware | Bounded deferral |
+|---|---:|---:|---:|
+| First worker | 6 | 0/6 | 6/6 |
+| Second worker | 6 | 6/6 | 6/6 |
+| Combined | 12 | 6/12 | 12/12 |
 
-Three main experimental scenarios were performed, followed by a preliminary five-trial repeatability evaluation of the controlled algorithm comparison.
+![Worker-stratified Kubernetes results](docs/research-v2/figures/kubernetes_worker_strata.png)
 
-### 7.1 Static CPU-Pressure Experiment
+Bounded deferral introduced approximately 1.863 seconds of intentional waiting on average.
 
-A controlled CPU-intensive BusyBox workload was pinned to `edge-node-1`.
+All six observed differences occurred when the lexically first worker was perturbed. This demonstrates the importance of deterministic worker selection and tie-breaking.
 
-The stressed worker reached approximately 51% CPU utilization while the other workers remained close to idle.
+The results are descriptive and configuration-specific. They do not establish a general causal performance improvement.
 
-The baseline pressure score increased substantially for the stressed worker, causing EdgePilot to recommend a lower-pressure worker.
-
-This demonstrates that the lightweight current-state heuristic reacts to a strong resource imbalance.
-
-The static experiment CSV contains observations accumulated during the initial monitoring and subsequent static-load run. It should therefore be interpreted as an experimental log rather than a perfectly isolated single-phase trace.
-
-### 7.2 Dynamic Load Experiment
-
-The dynamic experiment contained 14 observations:
-
-```text
-Observations 1-5   : Idle / history warm-up
-Observations 6-10  : Controlled CPU stress
-Observations 11-14 : Recovery period
-```
-
-The experiment automatically collected idle observations, introduced CPU pressure on `edge-node-1`, removed the stress workload, and recorded the subsequent recovery period.
-
-The maximum measured worker CPU utilization was **51.0%** at observation 10.
-
-The maximum trend component was also observed at observation 10:
-
-```text
-T = 25.50
-```
-
-At that observation:
-
-```text
-C_current = 51
-C_oldest  = 1
-M_current = 2
-M_oldest  = 1
-```
-
-Therefore:
-
-```text
-T = 0.5 * max(0, 51 - 1)
-  + 0.5 * max(0, 2 - 1)
-  = 25.5
-```
-
-and:
-
-```text
-R_trend
-= 0.4(51) + 0.4(2) + 0.2(25.5)
-= 26.3
-```
-
-This confirms that the trend component responds to short-term increases in resource pressure.
-
-During the short recovery interval, Metrics Server continued reporting elevated CPU values for several observations. This reflects monitoring and sampling delay and should not be interpreted as proof that CPU pressure physically remained at the reported level throughout the entire recovery interval.
-
-### 7.3 Baseline vs Trend-Aware Comparison
-
-A controlled comparison was performed using two candidate workers.
-
-The third worker was intentionally excluded to prevent an almost-idle third candidate from trivially winning the comparison.
-
-No observation produced a complete reversal between the baseline and trend-aware recommendations.
-
-However, trend awareness changed the relative score margins.
-
-At observation 11:
-
-```text
-Baseline:
-edge-node-1 = 9.00
-edge-node-2 = 11.50
-
-Preference margin = 11.50 - 9.00
-                  = 2.50
-```
-
-For the trend-aware model:
-
-```text
-edge-node-1 = 8.80
-edge-node-2 = 9.70
-
-Preference margin = 9.70 - 8.80
-                  = 0.90
-```
-
-The preference margin therefore decreased from **2.50 to 0.90**, a **64% reduction in the selection margin at that observation**.
-
-This should **not** be interpreted as a 64% improvement in scheduling performance.
-
-Instead, it demonstrates that short-term trend information materially changed the relative evaluation of the candidate workers, even though it was not sufficient to reverse the final recommendation.
-
-### 7.4 Preliminary Repeated-Trial Evaluation
-
-To examine whether the controlled comparison produced broadly repeatable behavior, the baseline-vs-trend experiment was repeated for five trials using the same experimental procedure.
-
-Each trial was preserved as a separate raw CSV file. Aggregate statistics were then calculated automatically from the retained trial data.
-
-Across the five trials:
-
-```text
-Trials completed                         : 5
-Mean peak CPU                            : 21.80%
-Sample standard deviation of peak CPU   : 0.45
-
-Mean peak trend component                : 10.40
-Sample standard deviation of peak trend : 0.22
-
-Mean maximum preference-margin reduction : 1.82
-Median maximum preference-margin reduction: 2.10
-Sample standard deviation                 : 0.48
-
-Recommendation divergences               : 0
-```
-
-The maximum within-trial preference-margin reductions were:
-
-```text
-Trial 1 : 2.20
-Trial 2 : 1.20
-Trial 3 : 2.10
-Trial 4 : 1.40
-Trial 5 : 2.20
-```
-
-These repeated trials provide preliminary evidence that the experimental behavior is reproducible under the current controlled setup. In particular, trend awareness repeatedly altered the relative preference margin between the two candidates.
-
-No recommendation divergence occurred in the five trials. Therefore, these results do not establish that the trend-aware model produces superior placement decisions. They show repeatable sensitivity to short-term pressure growth under this workload.
-
-The five-trial evaluation is a preliminary repeatability check for Project Review 3 and is **not** treated as a statistically powered final evaluation. A research-grade evaluation would require more trials, additional workload patterns, stronger scheduling baselines, heterogeneous or physically separated workers, and application-level outcome metrics.
-
----
-
-## 8. Experimental Results
-
-The automatically generated experimental summary reports:
-
-```text
-Maximum observed worker CPU: 51.0%
-Maximum trend component: 25.50
-Recommendation divergences: 0
-
-Largest reduction in node-1 preference margin:
-Observation: 11
-Baseline margin: 2.50
-Trend-aware margin: 0.90
-Margin reduction: 1.60
-```
-
-### Dynamic Worker CPU Pressure
-
-![Dynamic CPU Pressure](results/figures/dynamic-cpu-pressure.png)
-
-### Baseline and Trend-Aware Pressure Scores
-
-![Dynamic Scores](results/figures/dynamic-scores.png)
-
-### Trend Component
-
-![Trend Component](results/figures/trend-component.png)
-
-### Baseline vs Trend-Aware Candidate Preference
-
-![Algorithm Comparison](results/figures/algorithm-comparison.png)
-
-### Preliminary Repeated-Trial Evaluation
-
-![Repeated-Trial Evaluation](results/figures/repeated-trials.png)
-
-Across five repeated controlled trials, the mean maximum preference-margin reduction was **1.82**, with a sample standard deviation of **0.48**. No recommendation divergence was observed. These results are interpreted as preliminary repeatability evidence rather than proof of superior scheduling performance.
-
----
-
-## 9. Workload Placement Verification
-
-EdgePilot was also tested by using its recommendation to target a real Kubernetes workload.
-
-One successful run produced:
-
-```text
-NODE               CPU     MEM     SCORE
-edge-node-1       1.0%    1.0%      1.00
-edge-node-2       1.0%    2.0%      1.50
-edge-node-3       0.0%    1.0%      0.50
-
-Selected worker: edge-node-3
-Kubernetes node: k3d-edgepilot-agent-2
-Pressure score: 0.50
-```
-
-EdgePilot created a demonstration workload with a `nodeSelector`.
-
-Kubernetes reported:
-
-```text
-EdgePilot recommendation : edge-node-3
-Expected Kubernetes node  : k3d-edgepilot-agent-2
-Actual Kubernetes node    : k3d-edgepilot-agent-2
-Pod status                : Running
-```
-
-The placement was therefore successfully verified.
-
-This demonstrates integration between EdgePilot's external node-selection logic and Kubernetes workload placement.
-
-It does **not** imply that EdgePilot replaces Kubernetes' native scheduler.
-
-
----
-
-## 10. Result Interpretation
-
-The experiments support three main observations.
-
-### 10.1 Current Resource Pressure Is Useful Under Strong Imbalance
-
-When one worker reached approximately 51% CPU utilization while the alternatives remained lightly loaded, the baseline heuristic clearly penalized the stressed worker.
-
-For obvious resource imbalance, current CPU and memory information was sufficient to produce a sensible recommendation.
-
-### 10.2 Trend Awareness Captures Information Absent from a Static Snapshot
-
-During rising CPU pressure, the trend component reached 25.50.
-
-The trend-aware model therefore incorporated information about recent resource trajectory in addition to current utilization.
-
-### 10.3 Trend Awareness Did Not Change the Final Winner
-
-The controlled baseline-vs-trend experiment produced zero recommendation divergences.
-
-However, trend awareness narrowed the preference margin from 2.50 to 0.90 at observation 11.
-
-The evidence therefore supports the more limited conclusion that trend awareness provides additional ranking sensitivity rather than demonstrating superior placement decisions.
-
----
-
-## 11. Project Structure
+## Implementation
 
 ```text
 edgepilot/
-|
-|-- edgepilot.py
-|-- edgepilot_place.py
-|-- plot_results.py
-|-- README.md
-|-- .gitignore
-|
-|-- experiments/
-|   |-- compare_algorithms.py
-|   |-- run_dynamic_experiment.py
-|   `-- run_repeated_trials.py
-|
-|-- k8s/
-|   `-- cpu-stress.yaml
-|
-`-- results/
-    |-- edgepilot-timeseries.csv
-    |-- experiment-static-load.csv
-    |-- experiment-dynamic-load.csv
-    |-- experiment-algorithm-comparison.csv
-    |-- experiment-summary.txt
-    |-- repeated-trials-summary.csv
-    |-- repeated-trials-summary.txt
-    |
-    |-- repeated-trials/
-    |   |-- trial-1.csv
-    |   |-- trial-2.csv
-    |   |-- trial-3.csv
-    |   |-- trial-4.csv
-    |   `-- trial-5.csv
-    |
-    `-- figures/
-        |-- dynamic-cpu-pressure.png
-        |-- dynamic-scores.png
-        |-- trend-component.png
-        |-- algorithm-comparison.png
-        `-- repeated-trials.png
+├── research/
+│   ├── models.py
+│   ├── policies.py
+│   ├── baselines.py
+│   ├── simulator.py
+│   ├── advanced.py
+│   ├── reliability.py
+│   ├── voi_study.py
+│   ├── phase2_sensitivity.py
+│   ├── kube_validation.py
+│   ├── kube_wait_value.py
+│   ├── phase2_real_report.py
+│   ├── release_audit.py
+│   └── final_figures.py
+├── tests/
+├── configs/
+├── docs/
+│   └── research-v2/
+├── RESEARCH_CLAIMS.md
+└── pyproject.toml
 ```
 
----
+### Principal Components
 
-## 12. Running EdgePilot
+| Component | Responsibility |
+|---|---|
+| `models.py` | Validated workload, resource-state, and timestamped telemetry models |
+| `policies.py` | Scheduling decision interface and core policies |
+| `baselines.py` | Additional scheduling comparison strategies |
+| `simulator.py` | Deterministic event-driven simulation |
+| `advanced.py` | Telemetry impairments and event-driven wakeups |
+| `reliability.py` | Reliability and adverse-condition modeling |
+| `voi_study.py` | Matched-input value-of-information experiments |
+| `phase2_sensitivity.py` | Fixed synthetic sensitivity evaluation |
+| `kube_validation.py` | Kubernetes inventory and validation infrastructure |
+| `kube_wait_value.py` | Controlled live Kubernetes waiting-value experiments |
+| `phase2_real_report.py` | Aggregation of recorded Kubernetes evidence |
+| `release_audit.py` | Offline reproduction and evidence-integrity verification |
+| `final_figures.py` | Generation of research figures from preserved evidence |
 
-### Prerequisites
+## Getting Started
 
-A Kubernetes environment with:
+### Requirements
 
-- Python 3
-- `kubectl`
-- Kubernetes Metrics Server
-- worker nodes labelled using `edgepilot.io/node`
+- Python 3.11 or later
+- Git
+- pytest and matplotlib for testing and visualization
 
-Verify node metrics:
+Docker, kind, and kubectl are required only for live Kubernetes validation.
+
+### Installation
 
 ```bash
-kubectl top nodes
+git clone --branch research-v2 https://github.com/Sarb008/edgepilot.git
+cd edgepilot
+
+python -m venv .venv
 ```
 
-### Run the Advisory Monitor
+Activate the virtual environment.
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Linux or macOS:
 
 ```bash
-python3 edgepilot.py
+source .venv/bin/activate
 ```
 
-### Run the Placement Demonstration
+Install the project and development dependencies:
 
 ```bash
-python3 edgepilot_place.py
+python -m pip install -e ".[dev]"
 ```
 
-### Run the Dynamic Experiment
+### Run Automated Tests
 
 ```bash
-python3 experiments/run_dynamic_experiment.py
+python -m pytest -q
 ```
 
-### Run the Controlled Algorithm Comparison
+The final research release reports 530 passing automated tests.
+
+### Run the Synthetic Evaluation
 
 ```bash
-python3 experiments/compare_algorithms.py
+python -m research.phase2_sensitivity --output research_outputs/reproduction_01
 ```
 
-### Run the Preliminary Repeated-Trial Evaluation
+Use a new output directory for each execution. The experimental tooling intentionally refuses to overwrite existing evidence.
 
-```bash
-python3 experiments/run_repeated_trials.py
-```
+### Reproduce the Research Evidence
 
-This executes the controlled comparison five times, preserves each trial independently, and generates aggregate repeatability statistics. The evaluation is intended as preliminary experimental evidence rather than a statistically powered final study.
+See the [reproducibility guide](docs/research-v2/REPRODUCIBILITY.md) for exact commands, experimental configuration, saved evidence requirements, and audit procedures.
 
-### Generate Experimental Figures
+The full offline audit requires the preserved original experimental evidence directories. These are intentionally excluded from Git and must be supplied separately.
 
-The plotting script requires Matplotlib.
+Live Kubernetes experiments are explicitly opt-in and restricted to the designated validation environment.
 
-```bash
-python3 plot_results.py
-```
+## Research Documentation
 
-The generated figures are stored under:
+| Resource | Description |
+|---|---|
+| [Research manuscript (PDF)](docs/research-v2/EdgePilot_v2_Research_Draft.pdf) | Methodology, findings, discussion, and limitations |
+| [Research manuscript source](docs/research-v2/PAPER_DRAFT.md) | Markdown manuscript |
+| [Research overview](docs/research-v2/README_RESEARCH_V2.md) | Detailed research implementation overview |
+| [Reproducibility guide](docs/research-v2/REPRODUCIBILITY.md) | Experimental commands and evidence requirements |
+| [Research claims ledger](RESEARCH_CLAIMS.md) | Supported claims and interpretation boundaries |
+| [Demonstration guide](docs/research-v2/DEMO_SCRIPT.md) | Technical demonstration and explanation |
+| [Research release](https://github.com/Sarb008/edgepilot/releases/tag/v2.0.0-research) | Frozen release and manuscript |
 
-```text
-results/figures/
-```
+## Limitations
 
-and the automatically calculated summary is stored at:
+- The Kubernetes workers share a single physical host.
+- Live policy trials were sequential rather than simultaneous.
+- CPU-request feasibility was evaluated rather than actual compute saturation.
+- Worker identity and deterministic tie-breaking influenced observed outcomes.
+- Synthetic scenarios were constructed rather than sampled from production workloads.
+- Kubernetes placement uses the default scheduler with node selection; EdgePilot is not a replacement scheduler.
+- The work does not establish broad statistical significance, general causal superiority, or production-scale performance.
+- Research novelty requires further literature review and expert evaluation.
 
-```text
-results/experiment-summary.txt
-```
+## Conclusion
 
----
+Bounded deferral can improve deadline-aware placement when fresher telemetry reveals an otherwise infeasible scheduling decision and arrives within the remaining execution budget.
 
-## 13. Experimental Data
+When telemetry provides no useful new information, waiting introduces additional latency without improving on-time completion. Under some disruption conditions, waiting can also be harmful.
 
-The repository retains the experimental CSV files used to produce the figures and quantitative summary.
+EdgePilot v2 provides a reproducible platform for investigating these trade-offs under explicitly controlled conditions.
 
-### `edgepilot-timeseries.csv`
+## Project Status
 
-General monitoring output produced by the advisory EdgePilot implementation.
+- **Research release:** v2.0.0-research
+- **Release date:** November 12, 2026
+- **Status:** Completed exploratory research implementation.
 
-### `experiment-static-load.csv`
+The research manuscript is publicly available but has not been peer reviewed or accepted for publication.
 
-Recorded observations associated with the initial idle and static-pressure testing.
+## Original EdgePilot v1
 
-### `experiment-dynamic-load.csv`
+The original project investigated CPU/memory pressure and short-term resource trends in Kubernetes workload-placement recommendations.
 
-Fourteen-observation experiment covering idle, stress, and recovery phases.
+Its documentation and experimental artifacts are preserved for historical reference.
 
-### `experiment-algorithm-comparison.csv`
-
-Controlled two-candidate comparison of baseline and trend-aware scoring.
-
-### `repeated-trials/`
-
-Contains the five raw CSV files generated by the preliminary repeated-trial evaluation. Each trial is retained separately so that the aggregate results can be traced back to the underlying measurements.
-
-### `repeated-trials-summary.csv`
-
-Automatically calculated per-trial summary containing peak CPU, peak trend component, recommendation divergence count, and maximum preference-margin reduction.
-
-### `repeated-trials-summary.txt`
-
-Aggregate statistics across the five repeated controlled trials, including means, medians, and sample standard deviations.
-
-### `experiment-summary.txt`
-
-Automatically calculated key experimental results generated by `plot_results.py`.
-
-Keeping the raw experimental data allows the reported results and figures to be inspected rather than relying only on manually reported values.
-
----
-
-## 14. Limitations
-
-The current study has several important limitations.
-
-### 14.1 Single Physical Host
-
-All k3d nodes share one Google Cloud VM.
-
-The experiment therefore does not model physically isolated edge devices.
-
-### 14.2 Limited Resource Dimensions
-
-The current heuristic considers CPU and memory utilization.
-
-It does not currently include:
-
-- network latency,
-- bandwidth,
-- energy consumption,
-- disk pressure,
-- thermal state,
-- application-specific latency requirements.
-
-### 14.3 Metrics Sampling Delay
-
-Kubernetes Metrics Server does not provide instantaneous measurements.
-
-Short-lived workload changes may therefore appear with a delay. This behavior was visible during both load introduction and recovery.
-
-### 14.4 Fixed Heuristic Parameters
-
-The scoring weights and five-observation trend window were selected experimentally and have not been optimized.
-
-### 14.5 Small Experimental Scale
-
-The study uses three logical worker nodes and controlled synthetic workloads.
-
-The results should not be generalized directly to large production edge clusters.
-
-### 14.6 No Demonstrated Reliability Improvement Yet
-
-The experiments evaluate resource-pressure scoring, trend sensitivity, and placement integration.
-
-They do not establish statistically significant improvements in application reliability, latency, availability, or failure rate.
-
-### 14.7 External Scheduling Extension
-
-EdgePilot currently influences workload placement through Kubernetes scheduling constraints.
-
-It is not implemented as a replacement Kubernetes scheduler or Scheduler Framework plugin.
-
----
-
-## 15. Future Work
-
-Potential extensions include:
-
-- evaluation across physically separate edge nodes,
-- larger worker populations,
-- repeated trials and statistical analysis,
-- heterogeneous CPU and memory capacities,
-- network-latency-aware scheduling,
-- energy-aware scheduling,
-- pod resource-request awareness,
-- configurable scoring weights,
-- adaptive trend windows,
-- workload-specific scheduling policies,
-- Kubernetes Scheduler Framework integration,
-- comparison with Kubernetes native scheduling strategies,
-- failure and recovery experiments,
-- longer-duration workload traces.
-
----
-
-## 16. Conclusion
-
-EdgePilot demonstrates a lightweight and interpretable approach to resource-aware workload-placement guidance for Kubernetes edge environments.
-
-The experiments show that a simple CPU/memory pressure heuristic can react effectively to strong resource imbalance. Short-term trend awareness additionally captures rising resource pressure and can materially change relative candidate scores.
-
-In the current controlled comparison, trend awareness did not change the final node recommendation. Its demonstrated contribution is therefore additional trajectory information and ranking sensitivity rather than proven improvement in placement quality.
-
-Finally, EdgePilot successfully used its selected worker to constrain a real Kubernetes workload, with Kubernetes performing the final scheduling and binding.
-
-These results establish a functional experimental foundation for further evaluation of lightweight, trend-aware scheduling strategies in larger and more realistic edge environments.
+[Read the original EdgePilot v1 documentation](docs/README_V1.md)

@@ -6,7 +6,7 @@ I developed EdgePilot v2, a research-oriented Python framework for studying how 
 
 **Short resume bullet (accurate):**
 
-- Built EdgePilot v2, a deadline-aware stale-telemetry scheduling research framework (Python, Kubernetes/kind); implemented four policy baselines, deterministic simulation, **525 validated tests** at Phase 3, and reproducible CPU-request feasibility studies spanning **324 synthetic cases and 24 local Pod trials**; audited outcome/latency tradeoffs and documented limitations.
+- Built EdgePilot v2, a deadline-aware stale-telemetry scheduling research framework (Python, Kubernetes/kind); implemented four policy baselines, deterministic simulation, **530 passing automated tests** in the final research release, and reproducible CPU-request feasibility studies spanning **324 synthetic cases and 24 local Pod trials**; audited outcome/latency tradeoffs and documented limitations.
 
 **30-second interview explanation:**
 
@@ -14,4 +14,4 @@ I developed EdgePilot v2, a research-oriented Python framework for studying how 
 
 **Do not write:** “improved Kubernetes scheduling by 50%”, “invented a novel scheduling algorithm”, “deployed production cloud scheduler”, “proved statistical significance”, “published research paper”, or “measured CPU utilization” unless independent evidence later substantiates each claim.
 
-**Application timeline:** Project release target 25 November; application target by 28 November. Official India Student Researcher 2027 listing says to submit **before 4 December 2026** and notes rolling review. Official link: https://www.google.com/about/careers/applications/jobs/results/125423735539671750-student-researcher-2027
+**Application timeline:** Project released on 12 November 2026; application preparation and submission are the next milestones. Official India Student Researcher 2027 listing says to submit **before 4 December 2026** and notes rolling review. Official link: https://www.google.com/about/careers/applications/jobs/results/125423735539671750-student-researcher-2027

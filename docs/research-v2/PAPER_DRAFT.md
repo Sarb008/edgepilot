@@ -2,7 +2,7 @@
 
 **A controlled study of CPU-request placement under stale observations in edge–cloud-style scheduling**
 
-**Status:** Research-paper *draft*, prepared 12 November 2026 for internal review and the 25 November release. **Not peer reviewed, not submitted, and not a claim of novel algorithms.**  
+**Status:** Research-paper *draft*, prepared and publicly released on 12 November 2026 as part of EdgePilot v2.0.0-research. **Not peer reviewed, not submitted, and not a claim of novel algorithms.**
 **Author / affiliation:** Add the verified author list, institution, and contact details before distribution.
 
 ## Abstract
@@ -55,7 +55,7 @@ The final kind evidence comprises three predeclared runs with seeds `20261116`, 
 
 ### 3.4 Reproducibility and integrity controls
 
-A complete Python test suite passed **525/525 tests** on the user's Windows environment at the Phase 3 checkpoint. The offline release gate independently reproduced the 324 synthetic cases and verified the 24 Kubernetes trial records against previously saved traces and pooled reports. It also computed a new checksum inventory for raw Kubernetes traces. Those hashes were first attested at this gate; they do **not** establish immutability before that date. The successful audit verifies consistency of saved evidence, not the scientific adequacy of the experimental design.
+A complete Python test suite passed **525/525 tests** on Windows at the Phase 3 checkpoint. The final research release added five figure-integrity tests, bringing the total to **530/530 passing tests**. The offline release gate independently reproduced the 324 synthetic cases and verified the 24 Kubernetes trial records against previously saved traces and pooled reports. It also computed a new checksum inventory for raw Kubernetes traces. Those hashes were first attested at this gate; they do **not** establish immutability before that date. The successful audit verifies consistency of saved evidence, not the scientific adequacy of the experimental design.
 
 ## 4. Results
 

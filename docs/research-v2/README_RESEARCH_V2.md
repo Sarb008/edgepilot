@@ -3,7 +3,7 @@
 **Project:** Deadline-aware scheduling with bounded deferral under stale telemetry in edge–cloud-style systems.  
 **Research branch:** `research-v2` — preserve the original EdgePilot v1 materials.  
 **Evidence freeze:** Phase 3 release gate, commit `6a8cfd5` (user-confirmed).  
-**Planned publication-ready project release:** 25 November 2026.
+**Research release:** v2.0.0-research, published 12 November 2026.
 
 ## The research question
 
@@ -22,7 +22,7 @@ The result is conditional. Waiting is useful only when fresh measurements are in
 | Local kind, worker 2 perturbed (6 blocks) | 6 | 6 | Outcomes tied |
 | Local kind, combined (12 blocks) | 6 | 12 | Descriptive; not causal/generalizable |
 
-Bounded deferral added **1.863 seconds of intentional waiting per real-cluster block on average**. The kind study contains **24 sequential Pod trials / 12 blocks / 3 fixed runs**. The original code passed **525 automated tests** and a replay-and-compare reproducibility audit on the user's machine. The release figure test module is additional to that checkpoint.
+Bounded deferral added **1.863 seconds of intentional waiting per real-cluster block on average**. The kind study contains **24 sequential Pod trials / 12 blocks / 3 fixed runs**. The Phase 3 checkpoint passed **525 automated tests** and a replay-and-compare reproducibility audit. The final research release adds five figure-integrity tests, bringing the total to **530 passing automated tests**.
 
 ## Design overview
 
@@ -65,7 +65,7 @@ Deterministic simulator   Opt-in local kind
 - `docs/research-v2/PAPER_DRAFT.md` — complete manuscript-style report, results, citations, limitations.
 - `docs/research-v2/REPRODUCIBILITY.md` — exact Windows commands and evidence paths.
 - `docs/research-v2/DEMO_SCRIPT.md` — 2–3 minute demonstration and expected questions.
-- `docs/research-v2/RELEASE_CHECKLIST.md` — hard-stop validation and November 25 release steps.
+- `docs/research-v2/RELEASE_CHECKLIST.md` — historical release gates and final completion record.
 - `RESEARCH_CLAIMS.md` — frozen research-claims ledger from Phase 3.
 
 ## Minimum verification

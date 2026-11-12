@@ -16,7 +16,7 @@ python --version
 python -m pytest -q
 ```
 
-At the frozen Phase 3 commit, **525 tests passed**. The Phase 4 figure script and its tests increase this total by five if merged unchanged and dependencies remain compatible.
+At the frozen Phase 3 checkpoint, **525 tests passed**. The final v2.0.0-research release includes five additional figure-integrity tests, for a total of **530 passing tests**.
 
 ## B. Verify original saved evidence (no Kubernetes access)
 
@@ -64,7 +64,7 @@ kubectl --context kind-edgepilot-v2 get nodes
 kubectl --context kind-edgepilot-v2 get pods -n edgepilot-v2-validation
 ```
 
-The completed validation trials had no remaining Pods in their namespace. Do not delete unknown resources if the namespace is not empty. No more live experiment is required for the November 25 research release.
+The completed validation trials had no remaining Pods in their namespace. Do not delete unknown resources if the namespace is not empty. No additional live experiment is required to reproduce the saved evidence of the 12 November 2026 research release.
 
 ## E. Keep the original evidence
 
