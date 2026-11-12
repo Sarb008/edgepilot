@@ -1,5 +1,6 @@
 """Scheduling decisions use ONLY telemetry already delivered to the scheduler."""
 from dataclasses import dataclass
+from math import isfinite
 from typing import Protocol
 from .models import TelemetrySample, Workload
 
@@ -34,17 +35,21 @@ class Greedy:
 class BoundedDeferral:
     max_wait: float
     freshness_threshold: float
+    placement_latency: float = 0.0  # known dispatch/admission overhead, not future telemetry
 
     def __post_init__(self):
-        if self.max_wait < 0 or self.freshness_threshold < 0:
-            raise ValueError('max_wait and freshness_threshold must be nonnegative')
+        for name in ('max_wait', 'freshness_threshold', 'placement_latency'):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value) or value < 0:
+                raise ValueError(f'{name} must be finite and nonnegative')
 
     def decide(self, workload: Workload, now: float, samples: dict[str, TelemetrySample], waited: float) -> Decision | None:
         node = _best(workload, samples)
         if node is not None and samples[node].age_at(now) <= self.freshness_threshold:
             return Decision(node_id=node)
         # No deferral once the execution deadline would be jeopardized.
-        latest = min(workload.arrival_time + self.max_wait, workload.deadline - workload.duration)
+        latest = min(workload.arrival_time + self.max_wait,
+                     workload.deadline - workload.duration - self.placement_latency)
         if now + 1e-9 < latest:
             return Decision(wait_until=latest)
         return Decision(node_id=node) if node else None
