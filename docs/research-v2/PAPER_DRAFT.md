@@ -1,4 +1,4 @@
-# EdgePilot v2: Is Bounded Waiting for Fresher Telemetry Worth the Deadline Cost?
+# An Empirical Evaluation of Bounded Deferral Under Stale Telemetry for Deadline-Aware Kubernetes Placement
 
 **A controlled study of CPU-request placement under stale observations in edge–cloud-style scheduling**
 
@@ -100,7 +100,7 @@ The project's practical utility is as an auditable platform for reasoning about 
 
 ## 6. Threats to validity and limitations
 
-**Internal validity:** Policy arms execute sequentially; both act within the same prescribed treatment but not identical actual Pod microstates. Fixed worker names, tie-breaking and potential cache effects can influence outcomes. A finite observation deadline can censor a Pod that might later complete.
+**Internal validity:** Policy arms execute sequentially; both act within the same prescribed treatment but not identical actual Pod microstates. Fixed worker names, tie-breaking and potential cache effects can influence outcomes. A finite observation deadline can censor a Pod that might later complete. The Windows/WSL 2/Docker Desktop virtualization stack may add host-level scheduling jitter, affecting Pod startup and end-to-end timing measurements; the measured delays are therefore local observations rather than hardware-independent latency estimates.
 
 **Construct validity:** Kubernetes request allocations are not CPU utilization, and sleeping Pods do not measure throughput, power draw, throttling or actual compute saturation. The lab varies request reservations, not measured real-world network telemetry staleness.
 
@@ -120,7 +120,7 @@ EdgePilot v2 provides a reproducible experimental framework for the deadline-sen
 
 [1] M. Schwarzkopf, A. Konwinski, M. Abd-El-Malek, and J. Wilkes. “Omega: Flexible, Scalable Schedulers for Large Compute Clusters.” *EuroSys*, 2013. https://research.google/pubs/omega-flexible-scalable-schedulers-for-large-compute-clusters/
 
-[2] K. Ousterhout, P. Wendell, M. Zaharia, and I. Stoica. “Sparrow: Distributed, Low Latency Scheduling.” *SOSP*, 2013. https://amplab.cs.berkeley.edu/publication/sparrow-distributed-low-latency-scheduling/
+[2] K. Ousterhout, P. Wendell, M. Zaharia, and I. Stoica. “Sparrow: Distributed, Low Latency Scheduling.” *SOSP*, 2013. https://www.sigops.org/s/conferences/sosp/2013/papers/p69-ousterhout.pdf
 
 [3] I. Gog, M. Schwarzkopf, A. Gleave, R. N. M. Watson, and S. Hand. “Firmament: Fast, Centralized Cluster Scheduling at Scale.” *OSDI*, 2016. https://research.google/pubs/firmament-fast-centralized-cluster-scheduling-at-scale/
 

@@ -48,3 +48,10 @@ Do **not** add `research_outputs/` automatically. It is intentionally Git-ignore
 ## Step 5 — Release freeze, no need for new pods
 
 Run the existing Phase 3 `research.release_audit` command again with a **new** output directory, confirm a clean working tree, and inspect the remote before `git push -u origin research-v2`. Release tag only after completing the final checklist. Do not claim final-release status merely by extracting this archive; local integration and QA are still required.
+
+## Manuscript refinements, 12 November 2026
+
+- Retitled the paper in the Markdown, DOCX and PDF versions for formal academic presentation.
+- Clarified Windows/WSL 2/Docker Desktop host scheduling jitter in the internal-validity paragraph.
+- Updated the Sparrow citation to the SOSP 2013 proceedings PDF; the existing Berkeley mirror was intermittently inaccessible.
+- **Before public release:** Verify the author/affiliation placeholder and credit, confirm that the manuscript describes only completed work, and keep the paper marked a draft. These revisions do not establish research novelty or peer-review acceptance.
