@@ -223,7 +223,11 @@ Use a new output directory for each execution. The experimental tooling intentio
 
 See the [reproducibility guide](docs/research-v2/REPRODUCIBILITY.md) for exact commands, experimental configuration, saved evidence requirements, and audit procedures.
 
-The full offline audit requires the preserved original experimental evidence directories. These are intentionally excluded from Git and must be supplied separately.
+The full offline audit requires the preserved original experimental evidence directories, which are intentionally excluded from Git.
+
+Download the [original research evidence archive](https://github.com/Sarb008/edgepilot/releases/download/v2.0.0-research/EdgePilot-v2-evidence-2026-11-12.zip) and its [SHA-256 checksum](https://github.com/Sarb008/edgepilot/releases/download/v2.0.0-research/EdgePilot-v2-evidence-2026-11-12.sha256) from the research release.
+
+Extract the archive into the repository root so that `research_outputs/` is available before following the reproducibility instructions.
 
 Live Kubernetes experiments are explicitly opt-in and restricted to the designated validation environment.
 

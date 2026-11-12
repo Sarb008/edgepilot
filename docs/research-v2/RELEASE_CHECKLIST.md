@@ -76,8 +76,8 @@ All observed differences occurred in the lexically first worker stratum. Worker 
 - [x] Evidence checksum inventory.
 - [x] Local research evidence archive created.
 - [x] Local archive SHA-256 recorded.
-- [ ] Public evidence package privacy review.
-- [ ] Public evidence package publication.
+- [x] Public evidence package privacy review.
+- [x] Public evidence package publication.
 - [ ] Off-device evidence backup independently confirmed.
 
 Original local evidence archive:
