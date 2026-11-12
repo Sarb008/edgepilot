@@ -2,8 +2,10 @@
 
 **A controlled study of CPU-request placement under stale observations in edge–cloud-style scheduling**
 
-**Status:** Research-paper *draft*, prepared and publicly released on 12 November 2026 as part of EdgePilot v2.0.0-research. **Not peer reviewed, not submitted, and not a claim of novel algorithms.**
-**Author / affiliation:** Add the verified author list, institution, and contact details before distribution.
+**Status:** Research-paper draft, originally released on 12 November 2026 as part of EdgePilot v2.0.0-research. This documentation revision updates authorship, disclosures, and release metadata without changing the experimental results. Not peer reviewed, not submitted, and not a claim of novel algorithms.
+**Author:** Sarbajeet Pattadar
+
+**Affiliation:** School of Computer Science and Engineering (SCOPE), Vellore Institute of Technology, Chennai, India
 
 ## Abstract
 
@@ -115,6 +117,14 @@ The project's practical utility is as an auditable platform for reasoning about 
 ## 7. Conclusion
 
 EdgePilot v2 provides a reproducible experimental framework for the deadline-sensitive value-of-freshness tradeoff. The final synthetic matrix isolates cases where a timely updated resource observation avoids a stale-infeasible placement. A small controlled Kubernetes feasibility experiment records compatible observations, but the outcome remains dependent on worker perturbation and the sequential single-host setup. The defensible finding is **conditional**: bounded deferral can help when additional telemetry is informative and arrives with sufficient deadline slack; otherwise it adds waiting and may be harmful under system disruption. Larger, independently hosted, prospectively randomized experiments would be required before deployment or generalized performance claims.
+
+## Acknowledgments
+
+This work builds upon EdgePilot, originally developed as an academic project in Cloud Infrastructure and Architecture at Vellore Institute of Technology, Chennai. The author acknowledges the contributions of the original project team and the academic guidance received during the initial development of the system. EdgePilot v2 extends the original project through a distinct research investigation into stale telemetry, bounded deferral, and deadline-aware workload placement.
+
+## AI-Assistance Disclosure
+
+Generative AI tools, including OpenAI's ChatGPT, were used extensively during research planning, software implementation, debugging, experimental methodology development, analysis, documentation, and manuscript preparation. The human author directed the research investigation, executed the experimental workflows, reviewed the resulting evidence, and managed the implementation and reproducibility artifacts. Responsibility for the accuracy, interpretation, limitations, and integrity of the research remains with the human author. AI tools are not listed as authors.
 
 ## References
 

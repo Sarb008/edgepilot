@@ -91,8 +91,8 @@ def render(summary: dict, output: Path) -> None:
     ax.bar([x+w/2 for x in pos],bounded,w,label='Bounded deferral')
     ax.set_xticks(pos,labels)
     ax.set_ylim(0,115); ax.set_ylabel('On-time outcomes in fixed design (%)')
-    ax.set_title('Deterministic simulator: 108 configured cases per condition')
-    ax.legend(frameon=False,loc='upper right')
+    ax.set_title('Deterministic simulator: 108 configured cases per condition', pad=32)
+    ax.legend(frameon=False, loc='lower center', bbox_to_anchor=(0.5, 1.01), ncol=2)
     for collection in ax.containers:
         ax.bar_label(collection,fmt='%.1f%%',padding=3,fontsize=9)
     fig.text(.08,.01,'Engineered cases; not an empirical population estimate.',fontsize=9)
@@ -105,8 +105,8 @@ def render(summary: dict, output: Path) -> None:
     ax.bar([x+w/2 for x in pos],bounded,w,label='Bounded deferral')
     ax.set_xticks(pos,labels);ax.set_ylim(0,115)
     ax.set_ylabel('Observed on-time completions (%)')
-    ax.set_title('Local kind: 24 sequential Pod trials across 12 blocks')
-    ax.legend(frameon=False,loc='upper right')
+    ax.set_title('Local kind: 24 sequential Pod trials across 12 blocks', pad=32)
+    ax.legend(frameon=False, loc='lower center', bbox_to_anchor=(0.5, 1.01), ncol=2)
     for collection in ax.containers:
         ax.bar_label(collection,fmt='%.0f%%',padding=3,fontsize=9)
     fig.text(.08,.01,'Shared physical host; sequential arms; not a causal effect estimate.',fontsize=9)
